@@ -1,0 +1,466 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+#app {
+    width: 100%;
+    max-width: 900px;
+    background: #16213e;
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    min-height: 500px;
+    position: relative;
+}
+
+.screen {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.header h1 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #e94560, #c23152);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header h1 .icon {
+    -webkit-text-fill-color: initial;
+    color: #e94560;
+    font-size: 2.2rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-primary {
+    background: #e94560;
+    color: white;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #c23152;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.btn-secondary {
+    background: #2a3a5e;
+    color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+    background: #3a4a6e;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: #2d8f5c;
+    color: white;
+    box-shadow: 0 4px 15px rgba(45, 143, 92, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #237a4d;
+    transform: translateY(-2px);
+}
+
+.btn-icon {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #e0e0e0;
+    transition: 0.2s;
+}
+
+.btn-icon:hover {
+    color: #e94560;
+    transform: scale(1.1);
+}
+
+/* Topic Selector */
+.topic-selector {
+    background: #1a2744;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.topic-selector h2 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: #a8b8d8;
+}
+
+.topic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.topic-grid label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #1f2e4a;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 0.95rem;
+    color: #d0d8e0;
+}
+
+.topic-grid label:hover {
+    background: #2a3d5e;
+}
+
+.topic-grid input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #e94560;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.selector-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.shuffle-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #a8b8d8;
+}
+
+.shuffle-control input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #e94560;
+    cursor: pointer;
+}
+
+.total-info {
+    margin-top: 15px;
+    text-align: center;
+    color: #6a8aaa;
+    font-size: 0.9rem;
+}
+
+/* Test Screen */
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#progressBadge {
+    background: #2a3a5e;
+    padding: 6px 18px;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #a8b8d8;
+}
+
+.flash-container {
+    min-height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flash-message {
+    background: #2a3a5e;
+    padding: 8px 24px;
+    border-radius: 50px;
+    font-weight: 500;
+    animation: popIn 0.4s ease;
+    border: 1px solid #3a4a6e;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.card-wrapper {
+    perspective: 1200px;
+    margin: 10px 0 25px;
+}
+
+.anki-card {
+    background: #1f2e4a;
+    padding: 40px 30px;
+    border-radius: 20px;
+    min-height: 200px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid #2a3d5e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    animation: slideIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes slideIn {
+    0% { opacity: 0.3; transform: translateX(40px) scale(0.97); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.anki-card:hover {
+    border-color: #3a5a7e;
+}
+
+.anki-card.green {
+    background: #1a3a2a;
+    border-color: #2d8f5c;
+    box-shadow: 0 0 30px rgba(45, 143, 92, 0.15);
+}
+
+.anki-card.orange {
+    background: #3a2a1a;
+    border-color: #c27a3a;
+    box-shadow: 0 0 30px rgba(194, 122, 58, 0.15);
+}
+
+.card-content {
+    font-size: 1.3rem;
+    line-height: 1.7;
+    color: #e8e8e8;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+#btnNext {
+    display: none;
+}
+
+/* Result Screen */
+.result-card {
+    background: #1a2744;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.result-card h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #e94560;
+}
+
+.score-display {
+    display: inline-block;
+    margin: 10px 20px;
+    padding: 20px 30px;
+    background: #1f2e4a;
+    border-radius: 16px;
+    min-width: 120px;
+}
+
+.score-display.wrong {
+    border: 2px solid #c27a3a;
+}
+
+.score-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2d8f5c;
+}
+
+.score-display.wrong .score-number {
+    color: #c27a3a;
+}
+
+.score-label {
+    font-size: 0.9rem;
+    color: #8a9aba;
+    margin-top: 5px;
+}
+
+.result-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+/* Stats Screen */
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.stats-header h2 {
+    color: #a8b8d8;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.stat-card {
+    background: #1a2744;
+    padding: 16px;
+    border-radius: 16px;
+    text-align: center;
+    border: 1px solid #2a3a5e;
+    transition: 0.2s;
+}
+
+.stat-card:hover {
+    border-color: #3a5a7e;
+    transform: translateY(-2px);
+}
+
+.stat-card.empty {
+    grid-column: 1 / -1;
+    color: #6a8aaa;
+    padding: 30px;
+}
+
+.stat-date {
+    font-size: 0.85rem;
+    color: #8a9aba;
+    margin-bottom: 8px;
+}
+
+.stat-score {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #2d8f5c;
+}
+
+.stat-detail {
+    font-size: 0.9rem;
+    color: #8a9aba;
+    margin-top: 5px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    #app {
+        padding: 16px;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .header h1 .icon {
+        font-size: 1.8rem;
+    }
+    
+    .topic-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .selector-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .card-content {
+        font-size: 1.1rem;
+    }
+    
+    .anki-card {
+        padding: 30px 20px;
+        min-height: 150px;
+    }
+    
+    .score-display {
+        padding: 15px 20px;
+        min-width: 80px;
+    }
+    
+    .score-number {
+        font-size: 2.2rem;
+    }
+}
