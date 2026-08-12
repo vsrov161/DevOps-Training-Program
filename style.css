@@ -17,7 +17,7 @@ body {
 
 #app {
     width: 100%;
-    max-width: 900px;
+    max-width: 1100px;
     background: #16213e;
     border-radius: 24px;
     padding: 30px;
@@ -56,20 +56,63 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.header h1 .icon {
-    -webkit-text-fill-color: initial;
-    color: #e94560;
-    font-size: 2.2rem;
 }
 
 .header-actions {
     display: flex;
     gap: 12px;
+}
+
+/* Topic Cards */
+.topic-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.topic-card {
+    background: #1a2744;
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid #2a3d5e;
+    text-align: center;
+}
+
+.topic-card:hover {
+    transform: translateY(-4px);
+    border-color: #e94560;
+    box-shadow: 0 8px 30px rgba(233, 69, 96, 0.15);
+}
+
+.topic-card .icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.topic-card .title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #e8e8e8;
+    margin-bottom: 8px;
+}
+
+.topic-card .subtitle {
+    font-size: 0.9rem;
+    color: #8a9aba;
+}
+
+.topic-card .count {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 16px;
+    background: #2a3a5e;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    color: #a8b8d8;
 }
 
 /* Buttons */
@@ -129,7 +172,7 @@ body {
     padding: 8px 12px;
     background: transparent;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     cursor: pointer;
     color: #e0e0e0;
     transition: 0.2s;
@@ -140,17 +183,23 @@ body {
     transform: scale(1.1);
 }
 
-/* Topic Selector */
+/* Subtopics Screen */
+.subtopics-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+.subtopics-header h2 {
+    color: #a8b8d8;
+    font-size: 1.4rem;
+}
+
 .topic-selector {
     background: #1a2744;
     border-radius: 16px;
     padding: 24px;
-}
-
-.topic-selector h2 {
-    font-size: 1.2rem;
-    margin-bottom: 16px;
-    color: #a8b8d8;
 }
 
 .topic-grid {
@@ -430,11 +479,11 @@ body {
     }
     
     .header h1 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
     
-    .header h1 .icon {
-        font-size: 1.8rem;
+    .topic-cards {
+        grid-template-columns: 1fr;
     }
     
     .topic-grid {
@@ -463,4 +512,94 @@ body {
     .score-number {
         font-size: 2.2rem;
     }
+}
+
+/* Добавляем в конец файла */
+
+/* Карточка темы с кнопкой удаления */
+.topic-card {
+    position: relative;
+    background: #1a2744;
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid #2a3d5e;
+    text-align: center;
+}
+
+.topic-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.delete-topic-btn {
+    background: rgba(233, 69, 96, 0.2);
+    border: none;
+    color: #e94560;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.delete-topic-btn:hover {
+    background: #e94560;
+    color: white;
+    transform: scale(1.1);
+}
+
+.default-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 2px 12px;
+    background: #2a3a5e;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    color: #a8b8d8;
+    border: 1px solid #3a4a6e;
+}
+
+.topic-card .icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.topic-card .title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #e8e8e8;
+    margin-bottom: 8px;
+}
+
+.topic-card .subtitle {
+    font-size: 0.9rem;
+    color: #8a9aba;
+}
+
+.topic-card .count {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 16px;
+    background: #2a3a5e;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    color: #a8b8d8;
+}
+
+/* Кнопка "Выбрать все" в подтемах */
+.btn-secondary {
+    background: #2a3a5e;
+    color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+    background: #3a4a6e;
+    transform: translateY(-2px);
 }

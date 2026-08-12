@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linux Anki Cards</title>
+    <title>DevOps Training Program</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,19 +11,29 @@
         <!-- Главный экран -->
         <div id="homeScreen" class="screen active">
             <div class="header">
-                <h1>
-                    <span class="icon">🐧</span>
-                    Linux Anki
-                </h1>
+                <h1>📚 DevOps Training Program</h1>
                 <div class="header-actions">
-                    <button class="btn btn-primary" id="btnStart">🚀 Начать</button>
+                    <button class="btn btn-secondary" id="btnImport">📂 Импорт</button>
                     <button class="btn btn-secondary" id="btnStats">📊 Статистика</button>
                 </div>
             </div>
             
+            <div id="topicCards" class="topic-cards">
+                <!-- Карточки тем будут генерироваться динамически -->
+            </div>
+            
+            <input type="file" id="fileInput" accept=".json" style="display:none">
+        </div>
+
+        <!-- Экран выбора подтем -->
+        <div id="subtopicsScreen" class="screen">
+            <div class="subtopics-header">
+                <button class="btn btn-icon" id="btnBackToHome">← Назад</button>
+                <h2 id="currentTopicTitle">Название темы</h2>
+            </div>
+            
             <div class="topic-selector">
-                <h2>Выберите разделы</h2>
-                <div id="topicGrid" class="topic-grid"></div>
+                <div id="subtopicGrid" class="topic-grid"></div>
                 
                 <div class="selector-controls">
                     <div class="shuffle-control">
@@ -39,7 +49,7 @@
         <!-- Экран теста -->
         <div id="testScreen" class="screen">
             <div class="test-header">
-                <button class="btn btn-icon" id="btnHomeFromTest">🏠</button>
+                <button class="btn btn-icon" id="btnBackToSubtopics">← Назад</button>
                 <span id="progressBadge">1 / 10</span>
             </div>
             
@@ -71,7 +81,7 @@
                 </div>
                 <div class="result-actions">
                     <button class="btn btn-primary" id="btnRetry">🔄 Начать заново</button>
-                    <button class="btn btn-secondary" id="btnHomeFromResult">🏠 Домой</button>
+                    <button class="btn btn-secondary" id="btnResultToHome">🏠 Домой</button>
                 </div>
             </div>
         </div>
@@ -80,14 +90,13 @@
         <div id="statsScreen" class="screen">
             <div class="stats-header">
                 <h2>📈 История попыток</h2>
-                <button class="btn btn-secondary" id="btnBackHome">← Назад</button>
+                <button class="btn btn-secondary" id="btnBackHomeFromStats">← Назад</button>
             </div>
             <div id="statsList" class="stats-grid"></div>
         </div>
     </div>
 
-    <script src="questions.js"></script>
-    <script src="phrases.js"></script>
+    <script src="linux_anki.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
