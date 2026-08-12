@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Anki Cards</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Главный экран -->
+        <div id="homeScreen" class="screen active">
+            <div class="header">
+                <h1>
+                    <span class="icon">🐧</span>
+                    Linux Anki
+                </h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btnStart">🚀 Начать</button>
+                    <button class="btn btn-secondary" id="btnStats">📊 Статистика</button>
+                </div>
+            </div>
+            
+            <div class="topic-selector">
+                <h2>Выберите разделы</h2>
+                <div id="topicGrid" class="topic-grid"></div>
+                
+                <div class="selector-controls">
+                    <div class="shuffle-control">
+                        <input type="checkbox" id="shuffleCheck">
+                        <label for="shuffleCheck">🔀 Перемешать вопросы</label>
+                    </div>
+                    <button class="btn btn-primary" id="btnStartQuiz" disabled>Приступить →</button>
+                </div>
+                <div class="total-info">Всего вопросов: <span id="totalQcount">0</span></div>
+            </div>
+        </div>
+
+        <!-- Экран теста -->
+        <div id="testScreen" class="screen">
+            <div class="test-header">
+                <button class="btn btn-icon" id="btnHomeFromTest">🏠</button>
+                <span id="progressBadge">1 / 10</span>
+            </div>
+            
+            <div id="flashContainer" class="flash-container"></div>
+            
+            <div class="card-wrapper">
+                <div class="anki-card" id="cardQuestion">
+                    <div class="card-content">Вопрос</div>
+                </div>
+            </div>
+            
+            <div class="card-actions">
+                <button class="btn btn-success" id="btnKnow">✅ Знаю</button>
+                <button class="btn btn-secondary" id="btnNext">➡️ Дальше</button>
+            </div>
+        </div>
+
+        <!-- Экран результатов -->
+        <div id="resultScreen" class="screen">
+            <div class="result-card">
+                <h2>🏁 Результат</h2>
+                <div class="score-display">
+                    <div class="score-number" id="scoreCorrect">0</div>
+                    <div class="score-label">правильных</div>
+                </div>
+                <div class="score-display wrong">
+                    <div class="score-number" id="scoreWrong">0</div>
+                    <div class="score-label">неправильных</div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-primary" id="btnRetry">🔄 Начать заново</button>
+                    <button class="btn btn-secondary" id="btnHomeFromResult">🏠 Домой</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран статистики -->
+        <div id="statsScreen" class="screen">
+            <div class="stats-header">
+                <h2>📈 История попыток</h2>
+                <button class="btn btn-secondary" id="btnBackHome">← Назад</button>
+            </div>
+            <div id="statsList" class="stats-grid"></div>
+        </div>
+    </div>
+
+    <script src="questions.js"></script>
+    <script src="phrases.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
