@@ -563,6 +563,10 @@ body {
     box-shadow: 0 0 30px rgba(194, 160, 58, 0.15);
 }
 
+.anki-card.repeat .card-content {
+    color: #e8d88a;
+}
+
 .card-actions {
     display: flex;
     justify-content: center;
@@ -571,8 +575,9 @@ body {
     flex-wrap: wrap;
 }
 
-#btnRepeat {
-    display: none;
+#btnRepeat:not(:disabled):hover {
+    background: #c2a03a;
+    color: white;
 }
 
 #btnNext {

@@ -580,7 +580,9 @@ function renderCard() {
     
     const item = AppState.filteredQuestions[AppState.currentIndex];
     
+    // Сбрасываем карточку
     elements.cardQuestion.className = 'anki-card';
+    elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
     
     elements.cardFront.textContent = item.q || item.question;
@@ -595,7 +597,8 @@ function renderCard() {
     
     elements.progressBadge.textContent = `${AppState.currentIndex + 1} / ${AppState.filteredQuestions.length}`;
     elements.btnKnow.disabled = false;
-    elements.btnRepeat.style.display = 'none';
+    elements.btnRepeat.disabled = false;
+    elements.btnRepeat.style.display = 'inline-flex'; // Показываем кнопку "Повторить"
     elements.btnNext.style.display = 'none';
     elements.flashContainer.innerHTML = '';
     
@@ -610,6 +613,7 @@ function handleKnow() {
     elements.cardQuestion.classList.remove('flipped');
     showFlash(WELL_DONE);
     elements.btnKnow.disabled = true;
+    elements.btnRepeat.disabled = true;
     elements.btnRepeat.style.display = 'none';
     AppState.cardRevealed = true;
     elements.btnNext.style.display = 'inline-flex';
@@ -618,19 +622,36 @@ function handleKnow() {
 function handleRepeat() {
     if (AppState.isFinished || AppState.cardRevealed || AppState.isFlipping) return;
     
+    // Засчитываем как частичный ответ
     AppState.repeatCount++;
+    
+    // Сохраняем вопрос в список слабых мест
+    const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     AppState.weakQuestions.push({
-        question: AppState.filteredQuestions[AppState.currentIndex].q || 
-                 AppState.filteredQuestions[AppState.currentIndex].question,
-        answer: AppState.filteredQuestions[AppState.currentIndex].a || 
-                AppState.filteredQuestions[AppState.currentIndex].answer
+        question: currentItem.q || currentItem.question,
+        answer: currentItem.a || currentItem.answer
     });
     
+    // Меняем цвет карточки на жёлтый (частичный)
     elements.cardQuestion.className = 'anki-card repeat';
-    showFlash(REPEAT_PHRASES);
+    elements.cardQuestion.classList.remove('flipped');
+    
+    // Показываем фразу
+    const repeatPhrases = [
+        "🔄 Частично засчитано!", "Почти!", "Близко, но не точно!",
+        "Ещё немного!", "На грани!", "Почти правильно!"
+    ];
+    showFlash(repeatPhrases);
+    
+    // Блокируем кнопки
     elements.btnKnow.disabled = true;
+    elements.btnRepeat.disabled = true;
     elements.btnRepeat.style.display = 'none';
+    
+    // Отмечаем как отвеченное
     AppState.cardRevealed = true;
+    
+    // Показываем кнопку "Дальше"
     elements.btnNext.style.display = 'inline-flex';
 }
 
@@ -644,7 +665,10 @@ function handleCardClick() {
     elements.questionHint.textContent = currentItem.q || currentItem.question;
     elements.questionHint.style.display = 'block';
     elements.cardQuestion.classList.add('flipped');
+    
+    // Показываем кнопку "Повторить" на перевернутой карточке
     elements.btnRepeat.style.display = 'inline-flex';
+    elements.btnRepeat.disabled = false;
     
     setTimeout(() => {
         AppState.wrongCount++;
@@ -655,6 +679,8 @@ function handleCardClick() {
         
         showFlash(FAIL_PHRASES);
         elements.btnKnow.disabled = true;
+        elements.btnRepeat.disabled = true;
+        elements.btnRepeat.style.display = 'none';
         elements.btnNext.style.display = 'inline-flex';
         AppState.isFlipping = false;
     }, 600);
@@ -663,6 +689,7 @@ function handleCardClick() {
 function handleNext() {
     if (AppState.isFinished) return;
     
+    // Полностью сбрасываем карточку
     elements.cardQuestion.className = 'anki-card';
     elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
@@ -670,7 +697,10 @@ function handleNext() {
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     elements.flashContainer.innerHTML = '';
+    
+    // Сбрасываем кнопки
     elements.btnRepeat.style.display = 'none';
+    elements.btnNext.style.display = 'none';
     
     AppState.currentIndex++;
     renderCard();
@@ -897,6 +927,7 @@ function showStatsDetail(index) {
         `${Math.floor(entry.timeSpent / 60)}м ${entry.timeSpent % 60}с` : 
         'Таймер не использовался';
     
+    // Список слабых мест (частичные ответы)
     let weakListHtml = '';
     if (entry.weakQuestions && entry.weakQuestions.length > 0) {
         weakListHtml = `
@@ -904,7 +935,12 @@ function showStatsDetail(index) {
                 <strong style="color:#c2a03a;">🔄 Вопросы с частичным ответом (${entry.weakQuestions.length}):</strong>
                 <div class="modal-weak-list">
                     ${entry.weakQuestions.map((q, i) => 
-                        `<div class="modal-weak-item">${i+1}. ${q.question}</div>`
+                        `<div class="modal-weak-item">
+                            <strong>${i+1}.</strong> ${q.question}
+                            <div style="font-size:0.8rem; color:#6a8aaa; margin-top:2px;">
+                                Ответ: ${q.answer}
+                            </div>
+                        </div>`
                     ).join('')}
                 </div>
             </div>
