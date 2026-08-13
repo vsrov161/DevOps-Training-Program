@@ -7,12 +7,27 @@ const AppState = {
     currentIndex: 0,
     correctCount: 0,
     wrongCount: 0,
+    repeatCount: 0,
     isFinished: false,
     cardRevealed: false,
     history: [],
     shuffle: false,
     isFlipping: false,
-    pendingNext: false
+    pendingNext: false,
+    // Таймер
+    timerMode: null, // 'forward' | 'countdown' | null
+    timerSeconds: 0,
+    timerTotalSeconds: 0,
+    timerRunning: false,
+    timerPaused: false,
+    timerInterval: null,
+    countdownMinutes: 30,
+    timerStarted: false,
+    timerFinished: false,
+    timeoutTriggered: false,
+    actualTimeSpent: 0,
+    timeLimit: 0,
+    weakQuestions: []
 };
 
 // Фразы
@@ -34,6 +49,11 @@ const FAIL_PHRASES = [
     "Ошибка — двигатель прогресса!", "Осечка."
 ];
 
+const REPEAT_PHRASES = [
+    "🔄 Частично засчитано!", "Почти!", "Близко, но не точно!",
+    "Ещё немного!", "На грани!", "Почти правильно!"
+];
+
 // DOM элементы
 const elements = {};
 
@@ -42,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Получаем все элементы
     elements.homeScreen = document.getElementById('homeScreen');
     elements.subtopicsScreen = document.getElementById('subtopicsScreen');
+    elements.timerSettingsScreen = document.getElementById('timerSettingsScreen');
     elements.testScreen = document.getElementById('testScreen');
     elements.resultScreen = document.getElementById('resultScreen');
     elements.statsScreen = document.getElementById('statsScreen');
@@ -52,12 +73,15 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.totalQcount = document.getElementById('totalQcount');
     elements.shuffleCheck = document.getElementById('shuffleCheck');
     elements.btnStartQuiz = document.getElementById('btnStartQuiz');
+    elements.btnTimerSettings = document.getElementById('btnTimerSettings');
     elements.btnImport = document.getElementById('btnImport');
     elements.btnStats = document.getElementById('btnStats');
     elements.btnBackToHome = document.getElementById('btnBackToHome');
     elements.btnBackToSubtopics = document.getElementById('btnBackToSubtopics');
+    elements.btnBackToSubtopicsFromTimer = document.getElementById('btnBackToSubtopicsFromTimer');
     elements.btnBackHomeFromStats = document.getElementById('btnBackHomeFromStats');
     elements.btnResultToHome = document.getElementById('btnResultToHome');
+    elements.btnSaveTimerSettings = document.getElementById('btnSaveTimerSettings');
     elements.fileInput = document.getElementById('fileInput');
     elements.cardQuestion = document.getElementById('cardQuestion');
     elements.cardFront = document.getElementById('cardFront');
@@ -65,12 +89,29 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.progressBadge = document.getElementById('progressBadge');
     elements.flashContainer = document.getElementById('flashContainer');
     elements.btnKnow = document.getElementById('btnKnow');
+    elements.btnRepeat = document.getElementById('btnRepeat');
     elements.btnNext = document.getElementById('btnNext');
     elements.btnRetry = document.getElementById('btnRetry');
+    elements.btnFinishAttempt = document.getElementById('btnFinishAttempt');
     elements.scoreCorrect = document.getElementById('scoreCorrect');
+    elements.scoreRepeat = document.getElementById('scoreRepeat');
     elements.scoreWrong = document.getElementById('scoreWrong');
+    elements.timerResult = document.getElementById('timerResult');
     elements.statsList = document.getElementById('statsList');
     elements.questionHint = document.getElementById('questionHint');
+    elements.timerDisplay = document.getElementById('timerDisplay');
+    elements.timerText = document.getElementById('timerText');
+    elements.timeoutContainer = document.getElementById('timeoutContainer');
+    elements.statsDetailModal = document.getElementById('statsDetailModal');
+    elements.modalBody = document.getElementById('modalBody');
+    elements.modalTitle = document.getElementById('modalTitle');
+    elements.btnCloseModal = document.getElementById('btnCloseModal');
+
+    // Настройки таймера
+    elements.timerEnable = document.getElementById('timerEnable');
+    elements.countdownEnable = document.getElementById('countdownEnable');
+    elements.countdownMinutes = document.getElementById('countdownMinutes');
+    elements.countdownInputGroup = document.getElementById('countdownInputGroup');
 
     // Загружаем историю
     loadHistory();
@@ -108,15 +149,38 @@ function setupEventListeners() {
     // Статистика
     elements.btnStats.addEventListener('click', showStats);
     elements.btnBackHomeFromStats.addEventListener('click', goHome);
+    elements.btnCloseModal.addEventListener('click', closeModal);
+    elements.statsDetailModal.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
 
     // Навигация
     elements.btnBackToHome.addEventListener('click', goHome);
     elements.btnBackToSubtopics.addEventListener('click', goToSubtopics);
+    elements.btnBackToSubtopicsFromTimer.addEventListener('click', goToSubtopics);
     elements.btnResultToHome.addEventListener('click', goHome);
+
+    // Таймер
+    elements.btnTimerSettings.addEventListener('click', openTimerSettings);
+    elements.btnSaveTimerSettings.addEventListener('click', saveTimerSettings);
+    elements.timerEnable.addEventListener('change', updateTimerUI);
+    elements.countdownEnable.addEventListener('change', updateTimerUI);
+    elements.timerDisplay.addEventListener('click', toggleTimerPause);
+    elements.btnFinishAttempt.addEventListener('click', finishAttempt);
+    
+    // Быстрые кнопки таймера
+    document.querySelectorAll('.timer-quick-buttons .btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const minutes = parseInt(this.dataset.minutes);
+            const current = parseInt(elements.countdownMinutes.value) || 0;
+            elements.countdownMinutes.value = current + minutes;
+        });
+    });
 
     // Тест
     elements.btnStartQuiz.addEventListener('click', startTest);
     elements.btnKnow.addEventListener('click', handleKnow);
+    elements.btnRepeat.addEventListener('click', handleRepeat);
     elements.btnNext.addEventListener('click', handleNext);
     elements.btnRetry.addEventListener('click', startTest);
     elements.cardQuestion.addEventListener('click', handleCardClick);
@@ -354,7 +418,9 @@ function renderSubtopics() {
 
 function updateStartButton() {
     const checked = document.querySelectorAll('.subtopic-cb:checked');
-    elements.btnStartQuiz.disabled = checked.length === 0;
+    const hasSelection = checked.length > 0;
+    elements.btnStartQuiz.disabled = !hasSelection;
+    elements.btnTimerSettings.disabled = !hasSelection;
 }
 
 function updateTotalCount() {
@@ -402,31 +468,108 @@ function shuffleArray(arr) {
     return arr;
 }
 
+// ===== НАСТРОЙКИ ТАЙМЕРА =====
+
+function openTimerSettings() {
+    const checked = document.querySelectorAll('.subtopic-cb:checked');
+    if (checked.length === 0) {
+        alert('Сначала выберите хотя бы один раздел!');
+        return;
+    }
+    
+    elements.timerEnable.checked = AppState.timerMode === 'forward';
+    elements.countdownEnable.checked = AppState.timerMode === 'countdown';
+    elements.countdownMinutes.value = AppState.countdownMinutes || 30;
+    updateTimerUI();
+    showScreen('timerSettings');
+}
+
+function updateTimerUI() {
+    const countdownChecked = elements.countdownEnable.checked;
+    elements.countdownInputGroup.style.display = countdownChecked ? 'block' : 'none';
+    
+    // Если выбран обратный отсчет, снимаем прямой
+    if (countdownChecked) {
+        elements.timerEnable.checked = false;
+    }
+    // Если выбран прямой, снимаем обратный
+    if (elements.timerEnable.checked) {
+        elements.countdownEnable.checked = false;
+        elements.countdownInputGroup.style.display = 'none';
+    }
+}
+
+function saveTimerSettings() {
+    const forward = elements.timerEnable.checked;
+    const countdown = elements.countdownEnable.checked;
+    
+    if (forward && countdown) {
+        alert('Выберите только один режим таймера!');
+        return;
+    }
+    
+    if (forward) {
+        AppState.timerMode = 'forward';
+        AppState.countdownMinutes = 0;
+    } else if (countdown) {
+        AppState.timerMode = 'countdown';
+        const minutes = parseInt(elements.countdownMinutes.value) || 0;
+        if (minutes <= 0) {
+            alert('Введите положительное количество минут!');
+            return;
+        }
+        AppState.countdownMinutes = minutes;
+        AppState.timeLimit = minutes * 60;
+    } else {
+        AppState.timerMode = null;
+    }
+    
+    goToSubtopics();
+}
+
 // ===== ТЕСТ =====
 
 function startTest() {
     const pool = buildQuestionPool();
     if (pool.length === 0) return;
     
+    // Сброс состояния
     AppState.filteredQuestions = pool;
     AppState.currentIndex = 0;
     AppState.correctCount = 0;
     AppState.wrongCount = 0;
+    AppState.repeatCount = 0;
     AppState.isFinished = false;
     AppState.cardRevealed = false;
     AppState.isFlipping = false;
     AppState.pendingNext = false;
+    AppState.weakQuestions = [];
+    AppState.timerStarted = false;
+    AppState.timerRunning = false;
+    AppState.timerPaused = false;
+    AppState.timerFinished = false;
+    AppState.timeoutTriggered = false;
+    AppState.actualTimeSpent = 0;
+    
+    if (AppState.timerInterval) {
+        clearInterval(AppState.timerInterval);
+        AppState.timerInterval = null;
+    }
     
     showScreen('test');
     elements.btnKnow.disabled = false;
+    elements.btnRepeat.style.display = 'none';
     elements.btnNext.style.display = 'none';
     elements.flashContainer.innerHTML = '';
-    
-    // Очищаем вопрос-подсказку
+    elements.timeoutContainer.style.display = 'none';
+    elements.timerDisplay.style.display = 'none';
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     
     renderCard();
+    
+    // Запускаем таймер после рендера первой карточки
+    setTimeout(() => startTimer(), 300);
 }
 
 function renderCard() {
@@ -437,30 +580,25 @@ function renderCard() {
     
     const item = AppState.filteredQuestions[AppState.currentIndex];
     
-    // Сначала полностью сбрасываем все классы и состояния
     elements.cardQuestion.className = 'anki-card';
     elements.cardQuestion.style.transform = '';
     
-    // Сбрасываем содержимое
     elements.cardFront.textContent = item.q || item.question;
     elements.cardBack.textContent = item.a || item.answer;
     
-    // Скрываем подсказку (она будет показываться только на перевернутой карточке)
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     
-    // Сбрасываем флаги
     AppState.cardRevealed = false;
     AppState.isFlipping = false;
     AppState.pendingNext = false;
     
-    // Обновляем UI
     elements.progressBadge.textContent = `${AppState.currentIndex + 1} / ${AppState.filteredQuestions.length}`;
     elements.btnKnow.disabled = false;
+    elements.btnRepeat.style.display = 'none';
     elements.btnNext.style.display = 'none';
     elements.flashContainer.innerHTML = '';
     
-    // Принудительно перерисовываем для устранения артефактов
     void elements.cardQuestion.offsetHeight;
 }
 
@@ -472,6 +610,26 @@ function handleKnow() {
     elements.cardQuestion.classList.remove('flipped');
     showFlash(WELL_DONE);
     elements.btnKnow.disabled = true;
+    elements.btnRepeat.style.display = 'none';
+    AppState.cardRevealed = true;
+    elements.btnNext.style.display = 'inline-flex';
+}
+
+function handleRepeat() {
+    if (AppState.isFinished || AppState.cardRevealed || AppState.isFlipping) return;
+    
+    AppState.repeatCount++;
+    AppState.weakQuestions.push({
+        question: AppState.filteredQuestions[AppState.currentIndex].q || 
+                 AppState.filteredQuestions[AppState.currentIndex].question,
+        answer: AppState.filteredQuestions[AppState.currentIndex].a || 
+                AppState.filteredQuestions[AppState.currentIndex].answer
+    });
+    
+    elements.cardQuestion.className = 'anki-card repeat';
+    showFlash(REPEAT_PHRASES);
+    elements.btnKnow.disabled = true;
+    elements.btnRepeat.style.display = 'none';
     AppState.cardRevealed = true;
     elements.btnNext.style.display = 'inline-flex';
 }
@@ -483,12 +641,10 @@ function handleCardClick() {
     
     const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     
-    // Показываем вопрос над карточкой БЛЕКЛЫМ шрифтом
     elements.questionHint.textContent = currentItem.q || currentItem.question;
     elements.questionHint.style.display = 'block';
-    
-    // Переворачиваем карточку
     elements.cardQuestion.classList.add('flipped');
+    elements.btnRepeat.style.display = 'inline-flex';
     
     setTimeout(() => {
         AppState.wrongCount++;
@@ -507,20 +663,16 @@ function handleCardClick() {
 function handleNext() {
     if (AppState.isFinished) return;
     
-    // Полностью сбрасываем карточку ДО перехода
     elements.cardQuestion.className = 'anki-card';
-    elements.cardQuestion.classList.remove('flipped', 'green', 'orange');
+    elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
     
-    // Скрываем подсказку
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     elements.flashContainer.innerHTML = '';
+    elements.btnRepeat.style.display = 'none';
     
-    // Увеличиваем индекс
     AppState.currentIndex++;
-    
-    // Рендерим следующую карточку
     renderCard();
 }
 
@@ -532,22 +684,154 @@ function showFlash(phrases) {
     }, 700);
 }
 
+// ===== ТАЙМЕР =====
+
+function startTimer() {
+    if (!AppState.timerMode || AppState.timerStarted) return;
+    if (AppState.filteredQuestions.length === 0) return;
+    
+    AppState.timerStarted = true;
+    AppState.timerRunning = true;
+    AppState.timerPaused = false;
+    
+    elements.timerDisplay.style.display = 'flex';
+    elements.timerDisplay.className = 'timer-circle';
+    
+    if (AppState.timerMode === 'forward') {
+        AppState.timerSeconds = 0;
+    } else {
+        AppState.timerSeconds = AppState.timeLimit;
+        updateTimerColor();
+    }
+    
+    updateTimerDisplay();
+    AppState.timerInterval = setInterval(tick, 1000);
+}
+
+function tick() {
+    if (!AppState.timerRunning || AppState.timerPaused) return;
+    
+    if (AppState.timerMode === 'forward') {
+        AppState.timerSeconds++;
+        AppState.actualTimeSpent = AppState.timerSeconds;
+    } else {
+        AppState.timerSeconds--;
+        AppState.actualTimeSpent = AppState.timeLimit - AppState.timerSeconds;
+        updateTimerColor();
+        
+        if (AppState.timerSeconds <= 0) {
+            AppState.timerFinished = true;
+            AppState.timerRunning = false;
+            clearInterval(AppState.timerInterval);
+            elements.timerDisplay.className = 'timer-circle finished';
+            elements.timeoutContainer.style.display = 'block';
+            elements.timerText.textContent = '00:00';
+            showFlash(['⏰ Время вышло!']);
+            return;
+        }
+    }
+    
+    updateTimerDisplay();
+}
+
+function updateTimerColor() {
+    if (AppState.timerMode !== 'countdown') return;
+    
+    const percent = (AppState.timerSeconds / AppState.timeLimit) * 100;
+    elements.timerDisplay.className = 'timer-circle';
+    
+    if (percent <= 5) {
+        elements.timerDisplay.classList.add('danger');
+    } else if (percent <= 50) {
+        elements.timerDisplay.classList.add('warning');
+    }
+}
+
+function updateTimerDisplay() {
+    const mins = Math.floor(AppState.timerSeconds / 60);
+    const secs = AppState.timerSeconds % 60;
+    elements.timerText.textContent = 
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function toggleTimerPause() {
+    if (!AppState.timerStarted || AppState.timerFinished) return;
+    
+    AppState.timerPaused = !AppState.timerPaused;
+    
+    if (AppState.timerPaused) {
+        elements.timerDisplay.classList.add('paused');
+    } else {
+        elements.timerDisplay.classList.remove('paused');
+    }
+}
+
+function finishAttempt() {
+    if (!confirm('Завершить попытку? Неотвеченные вопросы будут засчитаны как неправильные.')) return;
+    
+    const remaining = AppState.filteredQuestions.length - AppState.currentIndex;
+    AppState.wrongCount += remaining;
+    AppState.timeoutTriggered = true;
+    AppState.isFinished = true;
+    
+    if (AppState.timerInterval) {
+        clearInterval(AppState.timerInterval);
+        AppState.timerRunning = false;
+    }
+    
+    finishTest();
+}
+
+// ===== ЗАВЕРШЕНИЕ ТЕСТА =====
+
 function finishTest() {
     AppState.isFinished = true;
+    
+    if (AppState.timerInterval) {
+        clearInterval(AppState.timerInterval);
+        AppState.timerRunning = false;
+    }
+    
     showScreen('result');
     elements.scoreCorrect.textContent = AppState.correctCount;
+    elements.scoreRepeat.textContent = AppState.repeatCount;
     elements.scoreWrong.textContent = AppState.wrongCount;
+    
+    let timerInfo = '';
+    if (AppState.timerMode === 'forward') {
+        const mins = Math.floor(AppState.actualTimeSpent / 60);
+        const secs = AppState.actualTimeSpent % 60;
+        timerInfo = `⏱️ Затрачено времени: ${mins}м ${secs}с`;
+    } else if (AppState.timerMode === 'countdown') {
+        const givenMins = Math.floor(AppState.timeLimit / 60);
+        const givenSecs = AppState.timeLimit % 60;
+        const spentMins = Math.floor(AppState.actualTimeSpent / 60);
+        const spentSecs = AppState.actualTimeSpent % 60;
+        timerInfo = `⏳ Дано: ${givenMins}м ${givenSecs}с · Потрачено: ${spentMins}м ${spentSecs}с`;
+        if (AppState.timeoutTriggered) {
+            timerInfo += ' ⚠️ Время вышло!';
+        }
+    }
+    elements.timerResult.textContent = timerInfo;
     
     const entry = {
         date: new Date().toLocaleString(),
         correct: AppState.correctCount,
+        repeat: AppState.repeatCount,
         wrong: AppState.wrongCount,
-        total: AppState.correctCount + AppState.wrongCount,
-        topic: AppState.currentTopic ? AppState.currentTopic.title : 'Unknown'
+        total: AppState.correctCount + AppState.repeatCount + AppState.wrongCount,
+        topic: AppState.currentTopic ? AppState.currentTopic.title : 'Unknown',
+        timerMode: AppState.timerMode,
+        timeSpent: AppState.actualTimeSpent || 0,
+        timeLimit: AppState.timeLimit || null,
+        timeoutTriggered: AppState.timeoutTriggered || false,
+        weakQuestions: AppState.weakQuestions || []
     };
     AppState.history.push(entry);
     saveHistory();
 }
+
+// ===== СТАТИСТИКА =====
 
 function showStats() {
     renderStats();
@@ -564,17 +848,107 @@ function renderStats() {
     }
     
     const reversed = [...AppState.history].reverse();
-    reversed.forEach(entry => {
+    reversed.forEach((entry, index) => {
         const div = document.createElement('div');
         div.className = 'stat-card';
+        if (entry.timeoutTriggered) {
+            div.style.borderColor = '#8a3a3a';
+            div.style.background = '#1a2a2a';
+        }
+        
+        const timeStr = entry.timerMode ? 
+            `${Math.floor(entry.timeSpent / 60)}м ${entry.timeSpent % 60}с` : 
+            '—';
+        
         div.innerHTML = `
             <div class="stat-date">${entry.date}</div>
             <div class="stat-score">${entry.correct} / ${entry.total}</div>
-            <div class="stat-detail">✅ ${entry.correct} · ❌ ${entry.wrong} · ${entry.topic || ''}</div>
+            <div class="stat-detail">
+                ✅ ${entry.correct} · 🔄 ${entry.repeat || 0} · ❌ ${entry.wrong}
+                ${entry.timeoutTriggered ? ' ⚠️' : ''}
+            </div>
+            <div class="stat-detail" style="font-size:0.75rem; color:#6a8aaa;">
+                ⏱️ ${timeStr} · ${entry.topic || ''}
+            </div>
+            <button class="btn btn-secondary btn-small" style="margin-top:10px;" 
+                    data-index="${AppState.history.length - 1 - index}">
+                📊 Детали
+            </button>
         `;
+        
+        const detailBtn = div.querySelector('button');
+        detailBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(e.target.dataset.index);
+            showStatsDetail(idx);
+        });
+        
         container.appendChild(div);
     });
 }
+
+function showStatsDetail(index) {
+    const entry = AppState.history[index];
+    if (!entry) return;
+    
+    elements.modalTitle.textContent = `📊 Детали попытки ${entry.date}`;
+    
+    const timeStr = entry.timerMode ? 
+        `${Math.floor(entry.timeSpent / 60)}м ${entry.timeSpent % 60}с` : 
+        'Таймер не использовался';
+    
+    let weakListHtml = '';
+    if (entry.weakQuestions && entry.weakQuestions.length > 0) {
+        weakListHtml = `
+            <div style="margin-top:15px;">
+                <strong style="color:#c2a03a;">🔄 Вопросы с частичным ответом (${entry.weakQuestions.length}):</strong>
+                <div class="modal-weak-list">
+                    ${entry.weakQuestions.map((q, i) => 
+                        `<div class="modal-weak-item">${i+1}. ${q.question}</div>`
+                    ).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    elements.modalBody.innerHTML = `
+        <div class="modal-stat-item">
+            <span class="label">✅ Правильных</span>
+            <span class="value correct">${entry.correct}</span>
+        </div>
+        <div class="modal-stat-item">
+            <span class="label">🔄 Частичных</span>
+            <span class="value repeat">${entry.repeat || 0}</span>
+        </div>
+        <div class="modal-stat-item">
+            <span class="label">❌ Неправильных</span>
+            <span class="value wrong">${entry.wrong}</span>
+        </div>
+        <div class="modal-stat-item">
+            <span class="label">📊 Всего вопросов</span>
+            <span class="value">${entry.total}</span>
+        </div>
+        <div class="modal-stat-item">
+            <span class="label">⏱️ Время</span>
+            <span class="value">${timeStr}</span>
+        </div>
+        ${entry.timeoutTriggered ? `
+        <div class="modal-stat-item" style="border-color:#8a3a3a;">
+            <span class="label">⚠️ Статус</span>
+            <span class="value" style="color:#ff6b6b;">Время вышло!</span>
+        </div>
+        ` : ''}
+        ${weakListHtml}
+    `;
+    
+    elements.statsDetailModal.style.display = 'flex';
+}
+
+function closeModal() {
+    elements.statsDetailModal.style.display = 'none';
+}
+
+// ===== НАВИГАЦИЯ =====
 
 function goToSubtopics() {
     if (AppState.currentTopic) {
@@ -594,6 +968,7 @@ function showScreen(screenName) {
     const screens = {
         home: elements.homeScreen,
         subtopics: elements.subtopicsScreen,
+        timerSettings: elements.timerSettingsScreen,
         test: elements.testScreen,
         result: elements.resultScreen,
         stats: elements.statsScreen

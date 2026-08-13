@@ -11,7 +11,7 @@
         <!-- Главный экран -->
         <div id="homeScreen" class="screen active">
             <div class="header">
-                <h1>DevOps Training Program</h1>
+                <h1>📚 DevOps Training Program</h1>
                 <div class="header-actions">
                     <button class="btn btn-secondary" id="btnImport">📂 Импорт</button>
                     <button class="btn btn-secondary" id="btnStats">📊 Статистика</button>
@@ -38,9 +38,39 @@
                         <input type="checkbox" id="shuffleCheck">
                         <label for="shuffleCheck">🔀 Перемешать вопросы</label>
                     </div>
+                    <button class="btn btn-secondary" id="btnTimerSettings">⏱️ Таймер</button>
                     <button class="btn btn-primary" id="btnStartQuiz" disabled>Приступить →</button>
                 </div>
                 <div class="total-info">Всего вопросов: <span id="totalQcount">0</span></div>
+            </div>
+        </div>
+
+        <!-- Экран настроек таймера -->
+        <div id="timerSettingsScreen" class="screen">
+            <div class="subtopics-header">
+                <button class="btn btn-icon" id="btnBackToSubtopicsFromTimer">← Назад</button>
+                <h2>⏱️ Настройки таймера</h2>
+            </div>
+            
+            <div class="timer-settings">
+                <div class="timer-option">
+                    <input type="checkbox" id="timerEnable">
+                    <label for="timerEnable">⏱️ Включить таймер прямого отсчета</label>
+                </div>
+                <div class="timer-option">
+                    <input type="checkbox" id="countdownEnable">
+                    <label for="countdownEnable">⏳ Включить обратный отсчет</label>
+                </div>
+                <div class="timer-input-group" id="countdownInputGroup" style="display:none;">
+                    <label for="countdownMinutes">Количество минут:</label>
+                    <input type="number" id="countdownMinutes" min="1" max="999" value="30">
+                    <div class="timer-quick-buttons">
+                        <button class="btn btn-secondary btn-small" data-minutes="30">+30</button>
+                        <button class="btn btn-secondary btn-small" data-minutes="45">+45</button>
+                        <button class="btn btn-secondary btn-small" data-minutes="60">+60</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btnSaveTimerSettings">Сохранить настройки</button>
             </div>
         </div>
 
@@ -48,12 +78,14 @@
         <div id="testScreen" class="screen">
             <div class="test-header">
                 <button class="btn btn-icon" id="btnBackToSubtopics">← Назад</button>
+                <div id="timerDisplay" class="timer-circle" style="display:none;">
+                    <span id="timerText">00:00</span>
+                </div>
                 <span id="progressBadge">1 / 10</span>
             </div>
             
             <div id="flashContainer" class="flash-container"></div>
             
-            <!-- КОНТЕЙНЕР ДЛЯ ПОДСКАЗКИ (над карточкой) -->
             <div class="question-hint-container">
                 <div id="questionHint"></div>
             </div>
@@ -73,7 +105,12 @@
             
             <div class="card-actions">
                 <button class="btn btn-success" id="btnKnow">✅ Знаю</button>
+                <button class="btn btn-secondary" id="btnRepeat">🔄 Повторить</button>
                 <button class="btn btn-secondary" id="btnNext">➡️ Дальше</button>
+            </div>
+            
+            <div id="timeoutContainer" style="display:none; margin-top: 20px;">
+                <button class="btn btn-danger" id="btnFinishAttempt">⏰ Завершить попытку</button>
             </div>
         </div>
 
@@ -85,10 +122,15 @@
                     <div class="score-number" id="scoreCorrect">0</div>
                     <div class="score-label">правильных</div>
                 </div>
+                <div class="score-display repeat">
+                    <div class="score-number" id="scoreRepeat">0</div>
+                    <div class="score-label">частичных</div>
+                </div>
                 <div class="score-display wrong">
                     <div class="score-number" id="scoreWrong">0</div>
                     <div class="score-label">неправильных</div>
                 </div>
+                <div id="timerResult"></div>
                 <div class="result-actions">
                     <button class="btn btn-primary" id="btnRetry">🔄 Начать заново</button>
                     <button class="btn btn-secondary" id="btnResultToHome">🏠 Домой</button>
@@ -103,6 +145,17 @@
                 <button class="btn btn-secondary" id="btnBackHomeFromStats">← Назад</button>
             </div>
             <div id="statsList" class="stats-grid"></div>
+        </div>
+
+        <!-- Модальное окно деталей статистики -->
+        <div id="statsDetailModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Детали попытки</h2>
+                    <button class="btn btn-icon" id="btnCloseModal">✕</button>
+                </div>
+                <div id="modalBody"></div>
+            </div>
         </div>
     </div>
 
