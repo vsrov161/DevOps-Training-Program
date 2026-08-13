@@ -14,8 +14,9 @@ const AppState = {
     shuffle: false,
     isFlipping: false,
     pendingNext: false,
+    selectedSubtopics: [], // Сохраняем выбранные категории
     // Таймер
-    timerMode: null, // 'forward' | 'countdown' | null
+    timerMode: null,
     timerSeconds: 0,
     timerTotalSeconds: 0,
     timerRunning: false,
@@ -193,6 +194,7 @@ function setupEventListeners() {
     // Обновление кнопки "Приступить" при выборе подтем
     elements.subtopicGrid.addEventListener('change', (e) => {
         if (e.target.classList.contains('subtopic-cb')) {
+            saveSelectedSubtopics();
             updateStartButton();
         }
     });
@@ -366,6 +368,7 @@ function selectTopic(topicId) {
     AppState.currentTopic = AppState.topics[topicId];
     if (!AppState.currentTopic) return;
     
+    AppState.selectedSubtopics = [];
     showScreen('subtopics');
     renderSubtopics();
 }
@@ -385,16 +388,18 @@ function renderSubtopics() {
         return;
     }
     
+    // Кнопка "Выбрать все"
     const selectAllFrame = document.createElement('div');
     selectAllFrame.style.cssText = 'grid-column: 1/-1; padding: 5px 0;';
     
     const selectAllBtn = document.createElement('button');
-    selectAllBtn.className = 'btn btn-secondary';
+    selectAllBtn.className = 'btn btn-secondary btn-small';
     selectAllBtn.textContent = '☑️ Выбрать все';
     selectAllBtn.style.cssText = 'font-size: 0.9rem; padding: 5px 15px;';
     selectAllBtn.addEventListener('click', () => {
         const checkboxes = grid.querySelectorAll('.subtopic-cb');
         checkboxes.forEach(cb => cb.checked = true);
+        saveSelectedSubtopics();
         updateStartButton();
     });
     selectAllFrame.appendChild(selectAllBtn);
@@ -410,10 +415,36 @@ function renderSubtopics() {
         label.appendChild(cb);
         label.appendChild(document.createTextNode(`${section.name} (${section.questions ? section.questions.length : 0})`));
         grid.appendChild(label);
+        
+        // Восстанавливаем сохраненное состояние
+        if (AppState.selectedSubtopics.includes(id)) {
+            cb.checked = true;
+        }
     });
     
     updateStartButton();
     updateTotalCount();
+    
+    // Добавляем обработчик для сохранения выбора
+    grid.addEventListener('change', (e) => {
+        if (e.target.classList.contains('subtopic-cb')) {
+            saveSelectedSubtopics();
+            updateStartButton();
+        }
+    });
+}
+
+function saveSelectedSubtopics() {
+    const checked = document.querySelectorAll('.subtopic-cb:checked');
+    AppState.selectedSubtopics = Array.from(checked).map(cb => cb.value);
+}
+
+function restoreSelectedSubtopics() {
+    const checkboxes = document.querySelectorAll('.subtopic-cb');
+    checkboxes.forEach(cb => {
+        cb.checked = AppState.selectedSubtopics.includes(cb.value);
+    });
+    updateStartButton();
 }
 
 function updateStartButton() {
@@ -430,7 +461,93 @@ function updateTotalCount() {
     const total = Object.values(topic.sections).reduce(
         (sum, section) => sum + (section.questions ? section.questions.length : 0), 0
     );
-    elements.totalQcount.textContent = total;
+    
+    const totalElement = elements.totalQcount;
+    totalElement.textContent = total;
+    
+    // Делаем родителя кликабельным
+    const parent = totalElement.parentElement;
+    parent.style.cursor = 'pointer';
+    parent.style.transition = 'all 0.3s';
+    parent.title = 'Нажмите чтобы увидеть все вопросы';
+    
+    // Убираем старые обработчики, чтобы не дублировать
+    const newParent = parent.cloneNode(true);
+    parent.parentNode.replaceChild(newParent, parent);
+    
+    // Добавляем эффекты на новый элемент
+    newParent.addEventListener('mouseenter', () => {
+        newParent.style.color = '#e94560';
+        newParent.style.textShadow = '0 0 20px rgba(233, 69, 96, 0.3)';
+    });
+    
+    newParent.addEventListener('mouseleave', () => {
+        newParent.style.color = '#6a8aaa';
+        newParent.style.textShadow = 'none';
+    });
+    
+    newParent.addEventListener('click', showAllQuestions);
+    
+    // Обновляем ссылку на total-info
+    elements.totalInfo = newParent;
+}
+
+function showAllQuestions() {
+    const topic = AppState.currentTopic;
+    if (!topic) return;
+    
+    // Собираем все вопросы из всех разделов
+    let allQuestions = [];
+    Object.values(topic.sections).forEach(section => {
+        if (section.questions) {
+            section.questions.forEach(q => {
+                allQuestions.push({
+                    question: q.q || q.question,
+                    section: section.name
+                });
+            });
+        }
+    });
+    
+    // Создаем модальное окно
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.id = 'questionsModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>📋 Все вопросы (${allQuestions.length})</h2>
+                <button class="btn btn-icon" id="btnCloseQuestionsModal">✕</button>
+            </div>
+            <div style="max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                ${allQuestions.map((q, i) => `
+                    <div style="padding: 10px 0; border-bottom: 1px solid #1a2744;">
+                        <div style="color: #8a9aba; font-size: 0.8rem;">${q.section}</div>
+                        <div style="color: #e0e0e0; margin-top: 4px;">${i+1}. ${q.question}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="margin-top: 15px; text-align: center; color: #6a8aaa; font-size: 0.85rem;">
+                Всего вопросов: ${allQuestions.length}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Закрытие по клику на крестик
+    document.getElementById('btnCloseQuestionsModal').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    // Закрытие по клику вне модалки
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 function getSelectedSubtopics() {
@@ -477,6 +594,9 @@ function openTimerSettings() {
         return;
     }
     
+    // Сохраняем выбранные категории перед уходом
+    saveSelectedSubtopics();
+    
     elements.timerEnable.checked = AppState.timerMode === 'forward';
     elements.countdownEnable.checked = AppState.timerMode === 'countdown';
     elements.countdownMinutes.value = AppState.countdownMinutes || 30;
@@ -488,11 +608,9 @@ function updateTimerUI() {
     const countdownChecked = elements.countdownEnable.checked;
     elements.countdownInputGroup.style.display = countdownChecked ? 'block' : 'none';
     
-    // Если выбран обратный отсчет, снимаем прямой
     if (countdownChecked) {
         elements.timerEnable.checked = false;
     }
-    // Если выбран прямой, снимаем обратный
     if (elements.timerEnable.checked) {
         elements.countdownEnable.checked = false;
         elements.countdownInputGroup.style.display = 'none';
@@ -524,6 +642,7 @@ function saveTimerSettings() {
         AppState.timerMode = null;
     }
     
+    // Возвращаемся с сохраненными категориями
     goToSubtopics();
 }
 
@@ -598,7 +717,7 @@ function renderCard() {
     elements.progressBadge.textContent = `${AppState.currentIndex + 1} / ${AppState.filteredQuestions.length}`;
     elements.btnKnow.disabled = false;
     elements.btnRepeat.disabled = false;
-    elements.btnRepeat.style.display = 'inline-flex'; // Показываем кнопку "Повторить"
+    elements.btnRepeat.style.display = 'inline-flex';
     elements.btnNext.style.display = 'none';
     elements.flashContainer.innerHTML = '';
     
@@ -637,11 +756,7 @@ function handleRepeat() {
     elements.cardQuestion.classList.remove('flipped');
     
     // Показываем фразу
-    const repeatPhrases = [
-        "🔄 Частично засчитано!", "Почти!", "Близко, но не точно!",
-        "Ещё немного!", "На грани!", "Почти правильно!"
-    ];
-    showFlash(repeatPhrases);
+    showFlash(REPEAT_PHRASES);
     
     // Блокируем кнопки
     elements.btnKnow.disabled = true;
@@ -665,8 +780,6 @@ function handleCardClick() {
     elements.questionHint.textContent = currentItem.q || currentItem.question;
     elements.questionHint.style.display = 'block';
     elements.cardQuestion.classList.add('flipped');
-    
-    // Показываем кнопку "Повторить" на перевернутой карточке
     elements.btnRepeat.style.display = 'inline-flex';
     elements.btnRepeat.disabled = false;
     
@@ -697,8 +810,6 @@ function handleNext() {
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     elements.flashContainer.innerHTML = '';
-    
-    // Сбрасываем кнопки
     elements.btnRepeat.style.display = 'none';
     elements.btnNext.style.display = 'none';
     
@@ -927,7 +1038,6 @@ function showStatsDetail(index) {
         `${Math.floor(entry.timeSpent / 60)}м ${entry.timeSpent % 60}с` : 
         'Таймер не использовался';
     
-    // Список слабых мест (частичные ответы)
     let weakListHtml = '';
     if (entry.weakQuestions && entry.weakQuestions.length > 0) {
         weakListHtml = `
@@ -990,6 +1100,10 @@ function goToSubtopics() {
     if (AppState.currentTopic) {
         showScreen('subtopics');
         renderSubtopics();
+        // Восстанавливаем выбранные категории после рендера
+        setTimeout(() => {
+            restoreSelectedSubtopics();
+        }, 50);
     } else {
         goHome();
     }

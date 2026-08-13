@@ -318,6 +318,35 @@ body {
     text-align: center;
     color: #6a8aaa;
     font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.total-info:hover {
+    color: #e94560 !important;
+    background: rgba(233, 69, 96, 0.05);
+    text-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
+}
+
+.total-info:active {
+    transform: scale(0.97);
+}
+
+.total-info .hint {
+    font-size: 0.75rem;
+    color: #4a6a8a;
+    display: inline-block;
+    margin-left: 6px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.total-info:hover .hint {
+    opacity: 1;
+    color: #e94560;
 }
 
 /* Timer Settings */
@@ -575,6 +604,10 @@ body {
     flex-wrap: wrap;
 }
 
+#btnRepeat {
+    display: none;
+}
+
 #btnRepeat:not(:disabled):hover {
     background: #c2a03a;
     color: white;
@@ -796,6 +829,24 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     border: 1px solid #2a3a5e;
+}
+
+#questionsModal .modal-content {
+    max-width: 800px;
+}
+
+#questionsModal .modal-content .modal-header {
+    margin-bottom: 15px;
+}
+
+#questionsModal .modal-content .modal-header h2 {
+    font-size: 1.2rem;
+    color: #a8b8d8;
+}
+
+#questionsModal .modal-content .modal-header h2 span {
+    color: #e94560;
+    font-weight: 700;
 }
 
 .modal-header {
