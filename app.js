@@ -14,7 +14,7 @@ const AppState = {
     shuffle: false,
     isFlipping: false,
     pendingNext: false,
-    selectedSubtopics: [], // Сохраняем выбранные категории
+    selectedSubtopics: [],
     // Таймер
     timerMode: null,
     timerSeconds: 0,
@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.btnStartQuiz = document.getElementById('btnStartQuiz');
     elements.btnTimerSettings = document.getElementById('btnTimerSettings');
     elements.btnImport = document.getElementById('btnImport');
+    elements.btnImportEmpty = document.getElementById('btnImportEmpty');
     elements.btnStats = document.getElementById('btnStats');
     elements.btnBackToHome = document.getElementById('btnBackToHome');
     elements.btnBackToSubtopics = document.getElementById('btnBackToSubtopics');
@@ -124,57 +125,17 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
-// ===== ПАРСИНГ MARKDOWN =====
-
-function parseMarkdown(text) {
-    if (!text) return '';
-    
-    // Настройки marked
-    if (typeof marked !== 'undefined') {
-        // Настройка marked для безопасного рендеринга
-        const renderer = new marked.Renderer();
-        
-        // Настраиваем рендеринг кода с подсветкой
-        renderer.code = function(code, language) {
-            const lang = language || 'bash';
-            return `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
-        };
-        
-        // Экранируем HTML для безопасности
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        marked.setOptions({
-            renderer: renderer,
-            gfm: true,          // GitHub Flavored Markdown
-            breaks: true,       // Переносы строк
-            sanitize: false,    // Разрешаем HTML-теги
-            smartLists: true,   // Умные списки
-            smartypants: true   // Умные кавычки
-        });
-        
-        try {
-            return marked.parse(text);
-        } catch (e) {
-            console.warn('Markdown parse error:', e);
-            return text;
-        }
-    }
-    
-    // Если marked не загружен, возвращаем текст как есть с базовым форматированием
-    return text
-        .replace(/\n/g, '<br>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>');
-}
-
 function setupEventListeners() {
     // Импорт
     elements.btnImport.addEventListener('click', () => {
         elements.fileInput.click();
     });
+    
+    if (elements.btnImportEmpty) {
+        elements.btnImportEmpty.addEventListener('click', () => {
+            elements.fileInput.click();
+        });
+    }
     
     elements.fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -246,33 +207,54 @@ function setupEventListeners() {
     });
 }
 
-// ===== УПРАВЛЕНИЕ ТЕМАМИ =====
+// ===== ПАРСИНГ MARKDOWN =====
 
-function loadDefaultTopic() {
-    if (window.LINUX_ANKI_DB && window.LINUX_ANKI_DB.sections) {
-        const linuxTopic = {
-            title: window.LINUX_ANKI_DB.title || "Linux Anki",
-            icon: window.LINUX_ANKI_DB.icon || "🐧",
-            sections: window.LINUX_ANKI_DB.sections,
-            isDefault: true
+function parseMarkdown(text) {
+    if (!text) return '';
+    
+    if (typeof marked !== 'undefined') {
+        const renderer = new marked.Renderer();
+        
+        renderer.code = function(code, language) {
+            const lang = language || 'bash';
+            return `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
         };
         
-        if (!AppState.topics['linux']) {
-            AppState.topics['linux'] = linuxTopic;
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
-        console.log('Linux Anki loaded! Sections:', Object.keys(linuxTopic.sections).length);
-    } else {
-        console.error('Linux Anki DB not found!');
+        
+        marked.setOptions({
+            renderer: renderer,
+            gfm: true,
+            breaks: true,
+            sanitize: false,
+            smartLists: true,
+            smartypants: true
+        });
+        
+        try {
+            return marked.parse(text);
+        } catch (e) {
+            console.warn('Markdown parse error:', e);
+            return text;
+        }
     }
+    
+    return text
+        .replace(/\n/g, '<br>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
+
+// ===== УПРАВЛЕНИЕ ТЕМАМИ =====
 
 function saveTopics() {
     try {
         const topicsToSave = {};
         for (const [id, topic] of Object.entries(AppState.topics)) {
-            if (!topic.isDefault) {
-                topicsToSave[id] = topic;
-            }
+            topicsToSave[id] = topic;
         }
         localStorage.setItem('anki_topics', JSON.stringify(topicsToSave));
     } catch (error) {
@@ -282,8 +264,6 @@ function saveTopics() {
 
 function loadTopics() {
     try {
-        loadDefaultTopic();
-        
         const saved = localStorage.getItem('anki_topics');
         if (saved) {
             const topics = JSON.parse(saved);
@@ -307,12 +287,23 @@ function importTopic(data) {
         return;
     }
     
+    // Проверяем, есть ли уже такая тема
+    const existingId = Object.keys(AppState.topics).find(id => 
+        AppState.topics[id].title === data.title
+    );
+    
+    if (existingId) {
+        if (!confirm(`Тема "${data.title}" уже существует. Заменить её?`)) {
+            return;
+        }
+        delete AppState.topics[existingId];
+    }
+    
     const id = 'topic_' + Date.now();
     AppState.topics[id] = {
         title: data.title,
         icon: data.icon || '📚',
-        sections: data.sections,
-        isDefault: false
+        sections: data.sections
     };
     
     saveTopics();
@@ -323,11 +314,6 @@ function importTopic(data) {
 function deleteTopic(topicId) {
     const topic = AppState.topics[topicId];
     if (!topic) return;
-    
-    if (topic.isDefault) {
-        alert('❌ Нельзя удалить встроенную тему Linux Anki!');
-        return;
-    }
     
     if (!confirm(`Удалить тему "${topic.title}"?`)) {
         return;
@@ -341,14 +327,6 @@ function deleteTopic(topicId) {
     }
     
     renderTopicCards();
-    
-    if (Object.keys(AppState.topics).length === 0) {
-        document.getElementById('topicCards').innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6a8aaa;">
-                Нет загруженных тем. Нажмите "Импорт" чтобы добавить.
-            </div>
-        `;
-    }
 }
 
 function renderTopicCards() {
@@ -358,10 +336,20 @@ function renderTopicCards() {
     const topicIds = Object.keys(AppState.topics);
     if (topicIds.length === 0) {
         container.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6a8aaa;">
-                Нет загруженных тем. Нажмите "Импорт" чтобы добавить.
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #6a8aaa;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📂</div>
+                <h2 style="color: #a8b8d8; margin-bottom: 10px;">Нет загруженных тем</h2>
+                <p style="margin-bottom: 20px;">Нажмите кнопку "Импорт" чтобы загрузить JSON-файл с вопросами</p>
+                <button class="btn btn-primary" id="btnImportEmpty">📂 Импортировать тему</button>
             </div>
         `;
+        
+        const emptyBtn = document.getElementById('btnImportEmpty');
+        if (emptyBtn) {
+            emptyBtn.addEventListener('click', () => {
+                elements.fileInput.click();
+            });
+        }
         return;
     }
     
@@ -374,13 +362,11 @@ function renderTopicCards() {
         const card = document.createElement('div');
         card.className = 'topic-card';
         
-        const isDefault = topic.isDefault || false;
-        const defaultBadge = isDefault ? '<span class="default-badge">⭐ Встроенная</span>' : '';
-        const deleteButton = !isDefault ? `
+        const deleteButton = `
             <button class="delete-topic-btn" data-topic-id="${id}" title="Удалить тему">
                 ✕
             </button>
-        ` : '';
+        `;
         
         card.innerHTML = `
             <div class="topic-card-header">
@@ -390,7 +376,6 @@ function renderTopicCards() {
             <div class="title">${topic.title}</div>
             <div class="subtitle">${Object.keys(topic.sections).length} разделов</div>
             <div class="count">${totalQuestions} вопросов</div>
-            ${defaultBadge}
         `;
         
         card.addEventListener('click', (e) => {
@@ -462,7 +447,6 @@ function renderSubtopics() {
         label.appendChild(document.createTextNode(`${section.name} (${section.questions ? section.questions.length : 0})`));
         grid.appendChild(label);
         
-        // Восстанавливаем сохраненное состояние
         if (AppState.selectedSubtopics.includes(id)) {
             cb.checked = true;
         }
@@ -471,7 +455,6 @@ function renderSubtopics() {
     updateStartButton();
     updateTotalCount();
     
-    // Добавляем обработчик для сохранения выбора
     grid.addEventListener('change', (e) => {
         if (e.target.classList.contains('subtopic-cb')) {
             saveSelectedSubtopics();
@@ -511,17 +494,14 @@ function updateTotalCount() {
     const totalElement = elements.totalQcount;
     totalElement.textContent = total;
     
-    // Делаем родителя кликабельным
     const parent = totalElement.parentElement;
     parent.style.cursor = 'pointer';
     parent.style.transition = 'all 0.3s';
     parent.title = 'Нажмите чтобы увидеть все вопросы';
     
-    // Убираем старые обработчики, чтобы не дублировать
     const newParent = parent.cloneNode(true);
     parent.parentNode.replaceChild(newParent, parent);
     
-    // Добавляем эффекты на новый элемент
     newParent.addEventListener('mouseenter', () => {
         newParent.style.color = '#e94560';
         newParent.style.textShadow = '0 0 20px rgba(233, 69, 96, 0.3)';
@@ -534,7 +514,6 @@ function updateTotalCount() {
     
     newParent.addEventListener('click', showAllQuestions);
     
-    // Обновляем ссылку на total-info
     elements.totalInfo = newParent;
 }
 
@@ -542,7 +521,6 @@ function showAllQuestions() {
     const topic = AppState.currentTopic;
     if (!topic) return;
     
-    // Собираем все вопросы из всех разделов
     let allQuestions = [];
     Object.values(topic.sections).forEach(section => {
         if (section.questions) {
@@ -555,7 +533,6 @@ function showAllQuestions() {
         }
     });
     
-    // Создаем модальное окно
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'flex';
@@ -583,12 +560,10 @@ function showAllQuestions() {
     
     document.body.appendChild(modal);
     
-    // Закрытие по клику на крестик
     document.getElementById('btnCloseQuestionsModal').addEventListener('click', () => {
         modal.remove();
     });
     
-    // Закрытие по клику вне модалки
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.remove();
@@ -640,7 +615,6 @@ function openTimerSettings() {
         return;
     }
     
-    // Сохраняем выбранные категории перед уходом
     saveSelectedSubtopics();
     
     elements.timerEnable.checked = AppState.timerMode === 'forward';
@@ -688,7 +662,6 @@ function saveTimerSettings() {
         AppState.timerMode = null;
     }
     
-    // Возвращаемся с сохраненными категориями
     goToSubtopics();
 }
 
@@ -698,7 +671,6 @@ function startTest() {
     const pool = buildQuestionPool();
     if (pool.length === 0) return;
     
-    // Сброс состояния
     AppState.filteredQuestions = pool;
     AppState.currentIndex = 0;
     AppState.correctCount = 0;
@@ -733,7 +705,6 @@ function startTest() {
     
     renderCard();
     
-    // Запускаем таймер после рендера первой карточки
     setTimeout(() => startTimer(), 300);
 }
 
@@ -745,19 +716,16 @@ function renderCard() {
     
     const item = AppState.filteredQuestions[AppState.currentIndex];
     
-    // Сбрасываем карточку
     elements.cardQuestion.className = 'anki-card';
     elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
     
-    // Парсим Markdown
     const questionHtml = parseMarkdown(item.q || item.question);
     const answerHtml = parseMarkdown(item.a || item.answer);
     
     elements.cardFront.innerHTML = questionHtml;
     elements.cardBack.innerHTML = answerHtml;
     
-    // Добавляем класс для длинных слов, чтобы они переносились
     elements.cardFront.classList.add('card-content');
     elements.cardBack.classList.add('card-content');
     
@@ -823,7 +791,6 @@ function handleCardClick() {
     
     const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     
-    // Показываем вопрос над карточкой (plain text)
     elements.questionHint.textContent = currentItem.q || currentItem.question;
     elements.questionHint.style.display = 'block';
     elements.cardQuestion.classList.add('flipped');
@@ -849,7 +816,6 @@ function handleCardClick() {
 function handleNext() {
     if (AppState.isFinished) return;
     
-    // Полностью сбрасываем карточку
     elements.cardQuestion.className = 'anki-card';
     elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
@@ -1147,7 +1113,6 @@ function goToSubtopics() {
     if (AppState.currentTopic) {
         showScreen('subtopics');
         renderSubtopics();
-        // Восстанавливаем выбранные категории после рендера
         setTimeout(() => {
             restoreSelectedSubtopics();
         }, 50);

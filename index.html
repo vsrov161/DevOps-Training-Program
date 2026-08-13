@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevOps Training Program</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем marked.js для парсинга Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
@@ -19,7 +20,15 @@
                 </div>
             </div>
             
-            <div id="topicCards" class="topic-cards"></div>
+            <div id="topicCards" class="topic-cards">
+                <!-- Пустое состояние -->
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #6a8aaa;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">📂</div>
+                    <h2 style="color: #a8b8d8; margin-bottom: 10px;">Нет загруженных тем</h2>
+                    <p style="margin-bottom: 20px;">Нажмите кнопку "Импорт" чтобы загрузить JSON-файл с вопросами</p>
+                    <button class="btn btn-primary" id="btnImportEmpty">📂 Импортировать тему</button>
+                </div>
+            </div>
             
             <input type="file" id="fileInput" accept=".json" style="display:none">
         </div>
@@ -163,7 +172,6 @@
         </div>
     </div>
 
-    <script src="linux_anki.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
