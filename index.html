@@ -18,9 +18,7 @@
                 </div>
             </div>
             
-            <div id="topicCards" class="topic-cards">
-                <!-- Карточки тем будут генерироваться динамически -->
-            </div>
+            <div id="topicCards" class="topic-cards"></div>
             
             <input type="file" id="fileInput" accept=".json" style="display:none">
         </div>
@@ -55,9 +53,21 @@
             
             <div id="flashContainer" class="flash-container"></div>
             
+            <!-- КОНТЕЙНЕР ДЛЯ ПОДСКАЗКИ (над карточкой) -->
+            <div class="question-hint-container">
+                <div id="questionHint"></div>
+            </div>
+            
             <div class="card-wrapper">
                 <div class="anki-card" id="cardQuestion">
-                    <div class="card-content">Вопрос</div>
+                    <div class="card-inner">
+                        <div class="card-front" id="cardFront">
+                            <div class="card-content">Вопрос</div>
+                        </div>
+                        <div class="card-back" id="cardBack">
+                            <div class="card-content">Ответ</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             

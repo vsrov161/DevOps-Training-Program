@@ -1,8 +1,8 @@
 // Глобальное состояние приложения
 const AppState = {
-    topics: {},          // Все загруженные темы
-    currentTopic: null,  // Текущая выбранная тема
-    currentSubtopic: null, // Текущая выбранная подтема
+    topics: {},
+    currentTopic: null,
+    currentSubtopic: null,
     filteredQuestions: [],
     currentIndex: 0,
     correctCount: 0,
@@ -10,7 +10,9 @@ const AppState = {
     isFinished: false,
     cardRevealed: false,
     history: [],
-    shuffle: false
+    shuffle: false,
+    isFlipping: false,
+    pendingNext: false
 };
 
 // Фразы
@@ -58,6 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.btnResultToHome = document.getElementById('btnResultToHome');
     elements.fileInput = document.getElementById('fileInput');
     elements.cardQuestion = document.getElementById('cardQuestion');
+    elements.cardFront = document.getElementById('cardFront');
+    elements.cardBack = document.getElementById('cardBack');
     elements.progressBadge = document.getElementById('progressBadge');
     elements.flashContainer = document.getElementById('flashContainer');
     elements.btnKnow = document.getElementById('btnKnow');
@@ -66,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.scoreCorrect = document.getElementById('scoreCorrect');
     elements.scoreWrong = document.getElementById('scoreWrong');
     elements.statsList = document.getElementById('statsList');
+    elements.questionHint = document.getElementById('questionHint');
 
     // Загружаем историю
     loadHistory();
@@ -97,7 +102,7 @@ function setupEventListeners() {
             };
             reader.readAsText(file);
         }
-        this.value = ''; // Сброс
+        this.value = '';
     });
 
     // Статистика
@@ -132,7 +137,6 @@ function setupEventListeners() {
 // ===== УПРАВЛЕНИЕ ТЕМАМИ =====
 
 function loadDefaultTopic() {
-    // Загружаем встроенную тему Linux
     if (window.LINUX_ANKI_DB && window.LINUX_ANKI_DB.sections) {
         const linuxTopic = {
             title: window.LINUX_ANKI_DB.title || "Linux Anki",
@@ -141,7 +145,6 @@ function loadDefaultTopic() {
             isDefault: true
         };
         
-        // Сохраняем только если еще нет такой темы
         if (!AppState.topics['linux']) {
             AppState.topics['linux'] = linuxTopic;
         }
@@ -153,7 +156,6 @@ function loadDefaultTopic() {
 
 function saveTopics() {
     try {
-        // Сохраняем только импортированные темы (не дефолтные)
         const topicsToSave = {};
         for (const [id, topic] of Object.entries(AppState.topics)) {
             if (!topic.isDefault) {
@@ -161,7 +163,6 @@ function saveTopics() {
             }
         }
         localStorage.setItem('anki_topics', JSON.stringify(topicsToSave));
-        console.log('Topics saved:', Object.keys(topicsToSave).length);
     } catch (error) {
         console.error('Error saving topics:', error);
     }
@@ -169,20 +170,16 @@ function saveTopics() {
 
 function loadTopics() {
     try {
-        // Загружаем дефолтную тему
         loadDefaultTopic();
         
-        // Загружаем сохраненные темы
         const saved = localStorage.getItem('anki_topics');
         if (saved) {
             const topics = JSON.parse(saved);
             for (const [id, topic] of Object.entries(topics)) {
-                // Проверяем, что тема имеет правильную структуру
                 if (topic.title && topic.sections) {
                     AppState.topics[id] = topic;
                 }
             }
-            console.log('Topics loaded from localStorage:', Object.keys(topics).length);
         }
         
         renderTopicCards();
@@ -193,13 +190,11 @@ function loadTopics() {
 }
 
 function importTopic(data) {
-    // Проверяем формат
     if (!data.title || !data.sections || typeof data.sections !== 'object') {
         alert('Неверный формат файла. Требуется: { "title": "...", "sections": {...} }');
         return;
     }
     
-    // Генерируем уникальный ID
     const id = 'topic_' + Date.now();
     AppState.topics[id] = {
         title: data.title,
@@ -208,42 +203,33 @@ function importTopic(data) {
         isDefault: false
     };
     
-    // Сохраняем в localStorage
     saveTopics();
     renderTopicCards();
     alert(`✅ Тема "${data.title}" успешно импортирована и сохранена!`);
 }
 
 function deleteTopic(topicId) {
-    // Проверяем, можно ли удалить
     const topic = AppState.topics[topicId];
     if (!topic) return;
     
-    // Не даем удалить дефолтную тему Linux
     if (topic.isDefault) {
         alert('❌ Нельзя удалить встроенную тему Linux Anki!');
         return;
     }
     
-    // Подтверждение удаления
     if (!confirm(`Удалить тему "${topic.title}"?`)) {
         return;
     }
     
-    // Удаляем тему
     delete AppState.topics[topicId];
-    
-    // Сохраняем изменения
     saveTopics();
     
-    // Если удалили текущую тему, сбрасываем
     if (AppState.currentTopic && !AppState.topics[Object.keys(AppState.topics).find(id => AppState.topics[id] === AppState.currentTopic)]) {
         AppState.currentTopic = null;
     }
     
     renderTopicCards();
     
-    // Если нет тем, показываем сообщение
     if (Object.keys(AppState.topics).length === 0) {
         document.getElementById('topicCards').innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6a8aaa;">
@@ -295,13 +281,11 @@ function renderTopicCards() {
             ${defaultBadge}
         `;
         
-        // Клик по карточке (кроме кнопки удаления)
         card.addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-topic-btn')) return;
             selectTopic(id);
         });
         
-        // Обработчик для кнопки удаления
         const deleteBtn = card.querySelector('.delete-topic-btn');
         if (deleteBtn) {
             deleteBtn.addEventListener('click', (e) => {
@@ -337,7 +321,6 @@ function renderSubtopics() {
         return;
     }
     
-    // Кнопка "Выбрать все"
     const selectAllFrame = document.createElement('div');
     selectAllFrame.style.cssText = 'grid-column: 1/-1; padding: 5px 0;';
     
@@ -419,6 +402,8 @@ function shuffleArray(arr) {
     return arr;
 }
 
+// ===== ТЕСТ =====
+
 function startTest() {
     const pool = buildQuestionPool();
     if (pool.length === 0) return;
@@ -429,12 +414,17 @@ function startTest() {
     AppState.wrongCount = 0;
     AppState.isFinished = false;
     AppState.cardRevealed = false;
+    AppState.isFlipping = false;
+    AppState.pendingNext = false;
     
     showScreen('test');
     elements.btnKnow.disabled = false;
     elements.btnNext.style.display = 'none';
-    elements.cardQuestion.className = 'anki-card';
     elements.flashContainer.innerHTML = '';
+    
+    // Очищаем вопрос-подсказку
+    elements.questionHint.textContent = '';
+    elements.questionHint.style.display = 'none';
     
     renderCard();
 }
@@ -446,21 +436,40 @@ function renderCard() {
     }
     
     const item = AppState.filteredQuestions[AppState.currentIndex];
-    const cardContent = elements.cardQuestion.querySelector('.card-content');
-    cardContent.textContent = item.q || item.question;
+    
+    // Сначала полностью сбрасываем все классы и состояния
     elements.cardQuestion.className = 'anki-card';
+    elements.cardQuestion.style.transform = '';
+    
+    // Сбрасываем содержимое
+    elements.cardFront.textContent = item.q || item.question;
+    elements.cardBack.textContent = item.a || item.answer;
+    
+    // Скрываем подсказку (она будет показываться только на перевернутой карточке)
+    elements.questionHint.textContent = '';
+    elements.questionHint.style.display = 'none';
+    
+    // Сбрасываем флаги
     AppState.cardRevealed = false;
+    AppState.isFlipping = false;
+    AppState.pendingNext = false;
+    
+    // Обновляем UI
     elements.progressBadge.textContent = `${AppState.currentIndex + 1} / ${AppState.filteredQuestions.length}`;
     elements.btnKnow.disabled = false;
     elements.btnNext.style.display = 'none';
     elements.flashContainer.innerHTML = '';
+    
+    // Принудительно перерисовываем для устранения артефактов
+    void elements.cardQuestion.offsetHeight;
 }
 
 function handleKnow() {
-    if (AppState.isFinished || AppState.cardRevealed) return;
+    if (AppState.isFinished || AppState.cardRevealed || AppState.isFlipping) return;
     
     AppState.correctCount++;
     elements.cardQuestion.className = 'anki-card green';
+    elements.cardQuestion.classList.remove('flipped');
     showFlash(WELL_DONE);
     elements.btnKnow.disabled = true;
     AppState.cardRevealed = true;
@@ -468,24 +477,50 @@ function handleKnow() {
 }
 
 function handleCardClick() {
-    if (AppState.isFinished || AppState.cardRevealed) return;
+    if (AppState.isFinished || AppState.cardRevealed || AppState.isFlipping) return;
     
-    AppState.wrongCount++;
-    AppState.cardRevealed = true;
-    elements.cardQuestion.className = 'anki-card orange';
+    AppState.isFlipping = true;
     
-    const item = AppState.filteredQuestions[AppState.currentIndex];
-    const cardContent = elements.cardQuestion.querySelector('.card-content');
-    cardContent.textContent = item.a || item.answer;
+    const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     
-    showFlash(FAIL_PHRASES);
-    elements.btnKnow.disabled = true;
-    elements.btnNext.style.display = 'inline-flex';
+    // Показываем вопрос над карточкой БЛЕКЛЫМ шрифтом
+    elements.questionHint.textContent = currentItem.q || currentItem.question;
+    elements.questionHint.style.display = 'block';
+    
+    // Переворачиваем карточку
+    elements.cardQuestion.classList.add('flipped');
+    
+    setTimeout(() => {
+        AppState.wrongCount++;
+        AppState.cardRevealed = true;
+        
+        elements.cardQuestion.className = 'anki-card orange';
+        elements.cardQuestion.classList.add('flipped');
+        
+        showFlash(FAIL_PHRASES);
+        elements.btnKnow.disabled = true;
+        elements.btnNext.style.display = 'inline-flex';
+        AppState.isFlipping = false;
+    }, 600);
 }
 
 function handleNext() {
     if (AppState.isFinished) return;
+    
+    // Полностью сбрасываем карточку ДО перехода
+    elements.cardQuestion.className = 'anki-card';
+    elements.cardQuestion.classList.remove('flipped', 'green', 'orange');
+    elements.cardQuestion.style.transform = '';
+    
+    // Скрываем подсказку
+    elements.questionHint.textContent = '';
+    elements.questionHint.style.display = 'none';
+    elements.flashContainer.innerHTML = '';
+    
+    // Увеличиваем индекс
     AppState.currentIndex++;
+    
+    // Рендерим следующую карточку
     renderCard();
 }
 
