@@ -757,6 +757,10 @@ function renderCard() {
     elements.cardFront.innerHTML = questionHtml;
     elements.cardBack.innerHTML = answerHtml;
     
+    // Добавляем класс для длинных слов, чтобы они переносились
+    elements.cardFront.classList.add('card-content');
+    elements.cardBack.classList.add('card-content');
+    
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
     

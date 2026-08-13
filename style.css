@@ -475,7 +475,7 @@ body {
     margin: 0 auto 8px auto;
     min-height: 28px;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     padding: 0 10px;
 }
@@ -484,7 +484,7 @@ body {
     color: rgba(168, 184, 216, 0.35);
     font-size: 0.85rem;
     font-weight: 700;
-    text-align: center;
+    text-align: left;
     line-height: 1.4;
     letter-spacing: 0.3px;
     display: none;
@@ -493,6 +493,7 @@ body {
     border-radius: 12px;
     max-width: 100%;
     word-break: break-word;
+    width: 100%;
 }
 
 /* Card */
@@ -511,7 +512,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
+    text-align: left;
     animation: slideIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
     position: relative;
     width: 100%;
@@ -541,11 +542,12 @@ body {
     border-radius: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: flex-start;
     padding: 30px;
     border: 2px solid #2a3d5e;
     background: #1f2e4a;
+    text-align: left;
 }
 
 .card-front {
@@ -562,12 +564,17 @@ body {
     font-size: 1.3rem;
     line-height: 1.7;
     color: #e8e8e8;
-    white-space: pre-wrap;
+    white-space: normal;
     word-break: break-word;
+    width: 100%;
+    text-align: left;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
 }
 
 .card-back .card-content {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
 }
 
 /* Card States */
@@ -615,6 +622,158 @@ body {
 
 #btnNext {
     display: none;
+}
+
+/* ===== MARKDOWN СТИЛИ ДЛЯ КАРТОЧЕК ===== */
+
+.card-content h1,
+.card-content h2,
+.card-content h3,
+.card-content h4,
+.card-content h5,
+.card-content h6 {
+    color: #e8e8e8;
+    margin: 8px 0;
+    font-weight: 600;
+    text-align: left;
+    width: 100%;
+}
+
+.card-content h1 { font-size: 1.8rem; }
+.card-content h2 { font-size: 1.5rem; }
+.card-content h3 { font-size: 1.3rem; }
+.card-content h4 { font-size: 1.1rem; }
+
+.card-content p {
+    margin: 6px 0;
+    text-align: left;
+    width: 100%;
+}
+
+.card-content code {
+    background: #0d1b2a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #e8d88a;
+    border: 1px solid #1a2744;
+    white-space: nowrap;
+}
+
+.card-content pre {
+    background: #0d1b2a;
+    padding: 12px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+    border: 1px solid #1a2744;
+    text-align: left;
+    width: 100%;
+}
+
+.card-content pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.card-content ul,
+.card-content ol {
+    margin: 6px 0;
+    padding-left: 24px;
+    text-align: left;
+    width: 100%;
+}
+
+.card-content ul li,
+.card-content ol li {
+    margin: 4px 0;
+    text-align: left;
+}
+
+.card-content blockquote {
+    border-left: 3px solid #e94560;
+    padding-left: 16px;
+    margin: 8px 0;
+    color: #a8b8d8;
+    text-align: left;
+    width: 100%;
+}
+
+.card-content strong {
+    color: #e8e8e8;
+    font-weight: 700;
+}
+
+.card-content em {
+    font-style: italic;
+    color: #c8d0d8;
+}
+
+.card-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.card-content table th,
+.card-content table td {
+    border: 1px solid #2a3a5e;
+    padding: 6px 12px;
+    text-align: left;
+}
+
+.card-content table th {
+    background: #1a2744;
+    color: #a8b8d8;
+    font-weight: 600;
+}
+
+.card-content a {
+    color: #e94560;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: 0.2s;
+}
+
+.card-content a:hover {
+    border-bottom-color: #e94560;
+}
+
+.card-content img {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+/* Специальные стили для inline-кода в ответах */
+.card-back .card-content code {
+    font-size: 0.85rem;
+}
+
+.card-back .card-content pre code {
+    font-size: 0.8rem;
+}
+
+/* Стили для списка команд (часто в ответах) */
+.card-content .command-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.card-content .command-list li {
+    padding: 4px 0;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.95rem;
+    color: #e8d88a;
 }
 
 /* Timer Circle */
@@ -919,6 +1078,10 @@ body {
     border-bottom: none;
 }
 
+.modal-weak-item strong {
+    color: #e8d88a;
+}
+
 /* Animations */
 @keyframes slideIn {
     0% { opacity: 0.3; transform: translateX(40px) scale(0.97); }
@@ -960,7 +1123,20 @@ body {
     }
     
     .card-content {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+    }
+    
+    .card-content h1 { font-size: 1.4rem; }
+    .card-content h2 { font-size: 1.2rem; }
+    .card-content h3 { font-size: 1.1rem; }
+    
+    .card-content pre {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .card-content code {
+        font-size: 0.8rem;
     }
     
     .card-back .card-content {
@@ -1007,168 +1183,14 @@ body {
     .test-header {
         gap: 8px;
     }
-}
-
-/* Добавляем в конец файла */
-
-/* ===== MARKDOWN СТИЛИ ДЛЯ КАРТОЧЕК ===== */
-
-/* Базовые стили для контента с Markdown */
-.card-content {
-    font-size: 1.3rem;
-    line-height: 1.7;
-    color: #e8e8e8;
-    white-space: normal;
-    word-break: break-word;
-    width: 100%;
-    text-align: left;
-}
-
-.card-content h1,
-.card-content h2,
-.card-content h3,
-.card-content h4,
-.card-content h5,
-.card-content h6 {
-    color: #e8e8e8;
-    margin: 8px 0;
-    font-weight: 600;
-}
-
-.card-content h1 { font-size: 1.8rem; }
-.card-content h2 { font-size: 1.5rem; }
-.card-content h3 { font-size: 1.3rem; }
-.card-content h4 { font-size: 1.1rem; }
-
-.card-content p {
-    margin: 6px 0;
-}
-
-.card-content code {
-    background: #0d1b2a;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.9rem;
-    color: #e8d88a;
-    border: 1px solid #1a2744;
-}
-
-.card-content pre {
-    background: #0d1b2a;
-    padding: 12px 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-    border: 1px solid #1a2744;
-    text-align: left;
-}
-
-.card-content pre code {
-    background: none;
-    padding: 0;
-    border: none;
-    color: #e0e0e0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    white-space: pre-wrap;
-}
-
-.card-content ul,
-.card-content ol {
-    margin: 6px 0;
-    padding-left: 24px;
-    text-align: left;
-}
-
-.card-content ul li,
-.card-content ol li {
-    margin: 4px 0;
-}
-
-.card-content blockquote {
-    border-left: 3px solid #e94560;
-    padding-left: 16px;
-    margin: 8px 0;
-    color: #a8b8d8;
-}
-
-.card-content strong {
-    color: #e8e8e8;
-    font-weight: 700;
-}
-
-.card-content em {
-    font-style: italic;
-    color: #c8d0d8;
-}
-
-.card-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 8px 0;
-    font-size: 0.9rem;
-}
-
-.card-content table th,
-.card-content table td {
-    border: 1px solid #2a3a5e;
-    padding: 6px 12px;
-    text-align: left;
-}
-
-.card-content table th {
-    background: #1a2744;
-    color: #a8b8d8;
-    font-weight: 600;
-}
-
-.card-content a {
-    color: #e94560;
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: 0.2s;
-}
-
-.card-content a:hover {
-    border-bottom-color: #e94560;
-}
-
-.card-content img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 8px 0;
-}
-
-/* Для ответов на обороте карточки */
-.card-back .card-content {
-    font-size: 1.15rem;
-}
-
-.card-back .card-content code {
-    font-size: 0.85rem;
-}
-
-.card-back .card-content pre code {
-    font-size: 0.8rem;
-}
-
-/* Мобильная адаптация */
-@media (max-width: 640px) {
-    .card-content {
-        font-size: 1.05rem;
+    
+    .question-hint-container {
+        justify-content: flex-start;
+        padding: 0 5px;
     }
     
-    .card-content h1 { font-size: 1.4rem; }
-    .card-content h2 { font-size: 1.2rem; }
-    .card-content h3 { font-size: 1.1rem; }
-    
-    .card-content pre {
-        padding: 8px 12px;
-        font-size: 0.8rem;
-    }
-    
-    .card-content code {
-        font-size: 0.8rem;
+    #questionHint {
+        font-size: 0.75rem;
+        padding: 3px 10px;
     }
 }
