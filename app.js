@@ -124,6 +124,52 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
+// ===== ПАРСИНГ MARKDOWN =====
+
+function parseMarkdown(text) {
+    if (!text) return '';
+    
+    // Настройки marked
+    if (typeof marked !== 'undefined') {
+        // Настройка marked для безопасного рендеринга
+        const renderer = new marked.Renderer();
+        
+        // Настраиваем рендеринг кода с подсветкой
+        renderer.code = function(code, language) {
+            const lang = language || 'bash';
+            return `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
+        };
+        
+        // Экранируем HTML для безопасности
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        marked.setOptions({
+            renderer: renderer,
+            gfm: true,          // GitHub Flavored Markdown
+            breaks: true,       // Переносы строк
+            sanitize: false,    // Разрешаем HTML-теги
+            smartLists: true,   // Умные списки
+            smartypants: true   // Умные кавычки
+        });
+        
+        try {
+            return marked.parse(text);
+        } catch (e) {
+            console.warn('Markdown parse error:', e);
+            return text;
+        }
+    }
+    
+    // Если marked не загружен, возвращаем текст как есть с базовым форматированием
+    return text
+        .replace(/\n/g, '<br>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
 function setupEventListeners() {
     // Импорт
     elements.btnImport.addEventListener('click', () => {
@@ -704,8 +750,12 @@ function renderCard() {
     elements.cardQuestion.classList.remove('flipped', 'green', 'orange', 'repeat');
     elements.cardQuestion.style.transform = '';
     
-    elements.cardFront.textContent = item.q || item.question;
-    elements.cardBack.textContent = item.a || item.answer;
+    // Парсим Markdown
+    const questionHtml = parseMarkdown(item.q || item.question);
+    const answerHtml = parseMarkdown(item.a || item.answer);
+    
+    elements.cardFront.innerHTML = questionHtml;
+    elements.cardBack.innerHTML = answerHtml;
     
     elements.questionHint.textContent = '';
     elements.questionHint.style.display = 'none';
@@ -741,32 +791,24 @@ function handleKnow() {
 function handleRepeat() {
     if (AppState.isFinished || AppState.cardRevealed || AppState.isFlipping) return;
     
-    // Засчитываем как частичный ответ
     AppState.repeatCount++;
     
-    // Сохраняем вопрос в список слабых мест
     const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     AppState.weakQuestions.push({
         question: currentItem.q || currentItem.question,
         answer: currentItem.a || currentItem.answer
     });
     
-    // Меняем цвет карточки на жёлтый (частичный)
     elements.cardQuestion.className = 'anki-card repeat';
     elements.cardQuestion.classList.remove('flipped');
     
-    // Показываем фразу
     showFlash(REPEAT_PHRASES);
     
-    // Блокируем кнопки
     elements.btnKnow.disabled = true;
     elements.btnRepeat.disabled = true;
     elements.btnRepeat.style.display = 'none';
     
-    // Отмечаем как отвеченное
     AppState.cardRevealed = true;
-    
-    // Показываем кнопку "Дальше"
     elements.btnNext.style.display = 'inline-flex';
 }
 
@@ -777,6 +819,7 @@ function handleCardClick() {
     
     const currentItem = AppState.filteredQuestions[AppState.currentIndex];
     
+    // Показываем вопрос над карточкой (plain text)
     elements.questionHint.textContent = currentItem.q || currentItem.question;
     elements.questionHint.style.display = 'block';
     elements.cardQuestion.classList.add('flipped');
