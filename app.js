@@ -212,12 +212,17 @@ function setupEventListeners() {
 function parseMarkdown(text) {
     if (!text) return '';
     
+    // Сначала экранируем кавычки для безопасного отображения
+    let safeText = text;
+    
     if (typeof marked !== 'undefined') {
         const renderer = new marked.Renderer();
         
         renderer.code = function(code, language) {
             const lang = language || 'bash';
-            return `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
+            // Экранируем кавычки внутри кода
+            const escapedCode = code.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return `<pre><code class="language-${lang}">${escapedCode}</code></pre>`;
         };
         
         function escapeHtml(text) {
@@ -236,14 +241,14 @@ function parseMarkdown(text) {
         });
         
         try {
-            return marked.parse(text);
+            return marked.parse(safeText);
         } catch (e) {
             console.warn('Markdown parse error:', e);
-            return text;
+            return safeText.replace(/\n/g, '<br>');
         }
     }
     
-    return text
+    return safeText
         .replace(/\n/g, '<br>')
         .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
